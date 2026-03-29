@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'print_service.dart';
+import 'permission_service.dart';
 
 class PrinterScreen extends StatefulWidget {
   const PrinterScreen({super.key});
@@ -20,7 +21,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
 
   // Colores corporativos
   static const Color primaryGreen = Color(0xFF2E7D32);
-  static const Color lightGreen = Color(0xFF43A047);
+  static const Color darkerGreen = Color(0xFF1B5E20);
 
   @override
   void initState() {
@@ -35,6 +36,15 @@ class _PrinterScreenState extends State<PrinterScreen> {
 
   Future<void> _checkBluetoothState() async {
     try {
+      // Verificar permisos de Bluetooth
+      final hasPermission = await PermissionService.checkAndRequestBluetooth(context);
+      if (!hasPermission) {
+        setState(() {
+          _statusMessage = 'Se necesitan permisos de Bluetooth';
+        });
+        return;
+      }
+
       final isSupported = await FlutterBluePlus.isSupported;
       if (!isSupported) {
         setState(() {
@@ -271,32 +281,68 @@ class _PrinterScreenState extends State<PrinterScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: (_isScanning || _isWebPlatform) ? null : _scanDevices,
-                    icon: _isScanning 
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.search),
-                    label: Text(_isScanning ? 'Buscando...' : 'Buscar Dispositivos'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryGreen,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey.shade300,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [primaryGreen, darkerGreen],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryGreen.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: (_isScanning || _isWebPlatform) ? null : _scanDevices,
+                      icon: _isScanning 
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.search),
+                      label: Text(_isScanning ? 'Buscando...' : 'Buscar Dispositivos'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _printService.isConnected ? _printTest : null,
-                  icon: const Icon(Icons.print),
-                  label: const Text('Prueba'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: lightGreen,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [primaryGreen, darkerGreen],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryGreen.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: _printService.isConnected ? _printTest : null,
+                    icon: const Icon(Icons.print),
+                    label: const Text('Prueba'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey.shade300,
+                    ),
                   ),
                 ),
               ],
@@ -344,7 +390,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
                             decoration: BoxDecoration(
                               color: isConnected 
                                   ? Colors.green.shade50 
-                                  : const Color(0xFFE8F5E9),
+                                  : primaryGreen.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
@@ -363,13 +409,24 @@ class _PrinterScreenState extends State<PrinterScreen> {
                           subtitle: Text(device.remoteId.toString()),
                           trailing: isConnected
                               ? const Icon(Icons.check_circle, color: Colors.green)
-                              : ElevatedButton(
-                                  onPressed: () => _connectToDevice(device),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryGreen,
-                                    foregroundColor: Colors.white,
+                              : Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    gradient: const LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [primaryGreen, darkerGreen],
+                                    ),
                                   ),
-                                  child: const Text('Conectar'),
+                                  child: ElevatedButton(
+                                    onPressed: () => _connectToDevice(device),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    child: const Text('Conectar'),
+                                  ),
                                 ),
                         ),
                       );
@@ -380,7 +437,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
           // Instrucciones
           Container(
             padding: const EdgeInsets.all(16),
-            color: const Color(0xFFE8F5E9),
+            color: primaryGreen.withOpacity(0.1),
             child: Row(
               children: [
                 Icon(Icons.info_outline, color: primaryGreen),

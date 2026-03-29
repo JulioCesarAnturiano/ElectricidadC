@@ -26,7 +26,7 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       // AppBar verde oscuro
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D3D1C),
+        backgroundColor: const Color(0xFF2E7D32),
         elevation: 8,
         shadowColor: Colors.black.withOpacity(0.5),
         leading: Padding(

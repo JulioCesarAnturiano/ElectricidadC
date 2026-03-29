@@ -11,11 +11,10 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Colores de la Cooperativa
+  // Colores de la Cooperativa - Sistema unificado
   static const Color primaryGreen = Color(0xFF2E7D32);
-  static const Color darkGreen = Color(0xFF1B5E20);
-  static const Color lightGreen = Color(0xFF4CAF50);
-  static const Color accentYellow = Color(0xFFFDD835);
+  static const Color darkerGreen = Color(0xFF1B5E20);
+  static const Color accentYellow = Color(0xFFF0E000);
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +43,7 @@ class MyApp extends StatelessWidget {
           ),
           floatingActionButtonTheme: const FloatingActionButtonThemeData(
             backgroundColor: accentYellow,
-            foregroundColor: darkGreen,
+            foregroundColor: darkerGreen,
           ),
           cardTheme: CardThemeData(
             elevation: 2,

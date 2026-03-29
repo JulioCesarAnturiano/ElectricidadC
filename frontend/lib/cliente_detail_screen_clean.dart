@@ -88,7 +88,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
         title: Text(
           'Resumen de Lectura',
           style: GoogleFonts.inter(
-            color: const Color(0xFF0D3D1C),
+            color: const Color(0xFF2E7D32),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -170,7 +170,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFF0E000),
-              foregroundColor: const Color(0xFF0D3D1C),
+              foregroundColor: const Color(0xFF2E7D32),
             ),
             child: Text(
               'Confirmar e Imprimir',
@@ -187,7 +187,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
     return Scaffold(
       // AppBar verde oscuro con nombre del cliente
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D3D1C),
+        backgroundColor: const Color(0xFF2E7D32),
         elevation: 8,
         shadowColor: Colors.black.withOpacity(0.5),
         title: Text(
@@ -262,7 +262,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
               Text(
                 'Registrar Lectura',
                 style: GoogleFonts.inter(
-                  color: const Color(0xFF0D3D1C),
+                  color: const Color(0xFF2E7D32),
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -280,18 +280,18 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                   labelStyle: GoogleFonts.inter(),
                   prefixIcon: const Icon(
                     Icons.speed,
-                    color: Color(0xFF0D3D1C),
+                    color: Color(0xFF2E7D32),
                   ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF0D3D1C)),
+                    borderSide: const BorderSide(color: Color(0xFF2E7D32)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(
-                      color: Color(0xFF0D3D1C),
+                      color: Color(0xFF2E7D32),
                       width: 2,
                     ),
                   ),
@@ -321,7 +321,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                   labelStyle: GoogleFonts.inter(),
                   prefixIcon: const Icon(
                     Icons.category,
-                    color: Color(0xFF0D3D1C),
+                    color: Color(0xFF2E7D32),
                   ),
                   filled: true,
                   fillColor: Colors.white,
@@ -331,7 +331,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(
-                      color: Color(0xFF0D3D1C),
+                      color: Color(0xFF2E7D32),
                       width: 2,
                     ),
                   ),
@@ -362,7 +362,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                     padding: EdgeInsets.only(bottom: 48),
                     child: Icon(
                       Icons.note,
-                      color: Color(0xFF0D3D1C),
+                      color: Color(0xFF2E7D32),
                     ),
                   ),
                   filled: true,
@@ -373,7 +373,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: Color(0xFF0D3D1C),
+                      color: Color(0xFF2E7D32),
                       width: 2,
                     ),
                   ),
@@ -409,7 +409,7 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF0E000),
-                    foregroundColor: const Color(0xFF0D3D1C),
+                    foregroundColor: const Color(0xFF2E7D32),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -449,7 +449,7 @@ class _DatoCliente extends StatelessWidget {
           Icon(
             icono,
             size: 20,
-            color: destacado ? const Color(0xFF0D3D1C) : Colors.grey[600],
+            color: destacado ? const Color(0xFF2E7D32) : Colors.grey[600],
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -466,7 +466,7 @@ class _DatoCliente extends StatelessWidget {
                 Text(
                   valor,
                   style: GoogleFonts.inter(
-                    color: destacado ? const Color(0xFF0D3D1C) : Colors.black87,
+                    color: destacado ? const Color(0xFF2E7D32) : Colors.black87,
                     fontWeight: destacado ? FontWeight.bold : FontWeight.normal,
                     fontSize: destacado ? 16 : 14,
                   ),
@@ -511,7 +511,7 @@ class _ResumenItem extends StatelessWidget {
               valor,
               style: GoogleFonts.inter(
                 fontWeight: destacado ? FontWeight.bold : FontWeight.normal,
-                color: destacado ? const Color(0xFF0D3D1C) : Colors.black87,
+                color: destacado ? const Color(0xFF2E7D32) : Colors.black87,
                 fontSize: destacado ? 15 : 13,
               ),
               textAlign: TextAlign.right,

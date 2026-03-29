@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'models/ruta.dart';
 import 'models/cliente.dart';
-import 'cliente_detail_screen.dart';
+import 'cliente_detail_screen_clean.dart';
 
 class RutaDetailScreen extends StatefulWidget {
   final Ruta ruta;
@@ -69,7 +69,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
     return Scaffold(
       // AppBar verde oscuro con nombre de la ruta
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D3D1C),
+        backgroundColor: const Color(0xFF2E7D32),
         elevation: 8,
         shadowColor: Colors.black.withOpacity(0.5),
         title: Text(
@@ -89,7 +89,7 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
         children: [
           // Buscador
           Container(
-            color: const Color(0xFF0D3D1C),
+            color: const Color(0xFF2E7D32),
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: TextField(
               controller: _busquedaController,

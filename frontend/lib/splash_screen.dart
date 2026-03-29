@@ -1,6 +1,3 @@
-/// Splash Screen - Pantalla de inicio con logo animado
-/// Muestra solo el logo de la cooperativa con animación de entrada
-
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 
@@ -13,75 +10,77 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  // Controller para las animaciones
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
-    _navigateToLogin();
-  }
-
-  /// Configura las animaciones de fade y escala
-  void _setupAnimations() {
-    _animationController = AnimationController(
+    
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
     );
 
-    // Animación de opacidad (fade in)
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    // Animación de escala: de pequeño a grande
+    _scaleAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(
       CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeIn,
-      ),
-    );
-
-    // Animación de escala (de 0.5 a 1.0 con efecto bounce)
-    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
+        parent: _controller,
         curve: Curves.easeOutBack,
       ),
     );
 
-    // Iniciar animación
-    _animationController.forward();
-  }
+    // Animación de opacidad
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
+      ),
+    );
 
-  /// Navega al login después de 3 segundos
-  Future<void> _navigateToLogin() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
+    // Iniciar animación
+    _controller.forward();
+
+    // Navegar al login después de la animación
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const LoginScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Fondo con degradado verde más oscuro
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF0D3D1C), // Verde muy oscuro
-              Color(0xFF145226), // Verde oscuro medio
-              Color(0xFF0A2815), // Verde casi negro
+              Color(0xFF43A047), // Verde medio
+              Color(0xFF2E7D32), // Verde oscuro
+              Color(0xFF1B5E20), // Verde más oscuro
             ],
           ),
         ),
@@ -91,44 +90,40 @@ class _SplashScreenState extends State<SplashScreen>
             child: ScaleTransition(
               scale: _scaleAnimation,
               child: Container(
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 50,
-                      spreadRadius: 10,
-                      offset: const Offset(0, 15),
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 25,
+                      spreadRadius: 3,
                     ),
                   ],
                 ),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 240,
-                  // Fallback si no existe la imagen
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 240,
-                      height: 240,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1B6B2F),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.5),
-                            blurRadius: 50,
-                            spreadRadius: 10,
-                            offset: const Offset(0, 15),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo.jpeg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: const BoxDecoration(
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0xFFFDD835),
+                              Color(0xFF43A047),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.bolt,
-                        size: 140,
-                        color: Color(0xFFF0E000),
-                      ),
-                    );
-                  },
+                        ),
+                        child: const Icon(
+                          Icons.bolt,
+                          size: 70,
+                          color: Colors.white,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

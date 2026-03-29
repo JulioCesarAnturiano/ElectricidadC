@@ -1,8 +1,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Permisos para Bluetooth -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    
+    <!-- Permisos para ubicación (necesario para GPS y Bluetooth) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    
+    <!-- Permiso de Internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
     <application
-        android:label="frontend"
+        android:label="Lecturas Eléctricas"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        
+        <!-- API Key de Google Maps - CAMBIAR POR TU API KEY -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="TU_API_KEY_DE_GOOGLE_MAPS_AQUI"/>
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

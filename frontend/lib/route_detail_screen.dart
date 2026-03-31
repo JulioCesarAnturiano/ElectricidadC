@@ -306,7 +306,8 @@ class _RouteDetailScreenState extends State<RouteDetailScreen>
                         width: 44,
                         height: 44,
                         child: GestureDetector(
-                          onTap: () => _showClientDialog(client),
+                          // Solo permitir interacción si NO está registrado
+                          onTap: isRegistered ? null : () => _showClientDialog(client),
                           child: Container(
                             decoration: BoxDecoration(
                               color: isRegistered ? Colors.green : Colors.red,

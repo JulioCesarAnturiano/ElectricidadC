@@ -25,7 +25,8 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _clientesFiltrados = widget.ruta.clientes;
+    // Solo mostrar clientes que NO tienen lectura registrada
+    _clientesFiltrados = widget.ruta.clientes.where((c) => c.lecturaActual == null).toList();
     _busquedaController.addListener(_filtrarClientes);
   }
 
@@ -35,14 +36,17 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
     super.dispose();
   }
 
-  /// Filtra clientes por nombre o código
+  /// Filtra clientes por nombre o código (solo los que NO tienen lectura registrada)
   void _filtrarClientes() {
     final query = _busquedaController.text.toLowerCase().trim();
     setState(() {
+      // Solo clientes sin lectura registrada
+      final clientesPendientes = widget.ruta.clientes.where((c) => c.lecturaActual == null).toList();
+      
       if (query.isEmpty) {
-        _clientesFiltrados = widget.ruta.clientes;
+        _clientesFiltrados = clientesPendientes;
       } else {
-        _clientesFiltrados = widget.ruta.clientes.where((cliente) {
+        _clientesFiltrados = clientesPendientes.where((cliente) {
           return cliente.nombre.toLowerCase().contains(query) ||
                  cliente.codCliente.toLowerCase().contains(query);
         }).toList();
@@ -181,8 +185,8 @@ class _RutaDetailScreenState extends State<RutaDetailScreen> {
                                   ClienteDetailScreen(cliente: cliente),
                             ),
                           );
-                          // Actualizar lista al regresar
-                          setState(() {});
+                          // Actualizar lista al regresar (re-filtrar para ocultar registrados)
+                          _filtrarClientes();
                         },
                       );
                     },

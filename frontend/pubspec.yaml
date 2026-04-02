@@ -57,6 +57,11 @@ dependencies:
   
   # Fuentes Google
   google_fonts: ^6.2.1
+  
+  # Generación de PDF (versión compatible con esc_pos_utils)
+  pdf: ^3.8.4
+  path_provider: ^2.1.4
+  open_filex: ^4.5.0
 
 dev_dependencies:
   flutter_test:

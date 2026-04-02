@@ -197,6 +197,87 @@ class PermissionService {
     return status.isGranted;
   }
 
+  /// Verifica y solicita permisos de almacenamiento para guardar PDFs
+  static Future<bool> checkAndRequestStorage(BuildContext context) async {
+    // En Android 13+ (API 33+), no se necesita permiso de almacenamiento para el directorio de documentos de la app
+    // Solo verificamos si estamos en una versión antigua que requiere permiso
+    var status = await Permission.storage.status;
+    
+    if (status.isDenied) {
+      status = await Permission.storage.request();
+    }
+
+    if (status.isPermanentlyDenied && context.mounted) {
+      await _showStoragePermissionDeniedDialog(context);
+      return false;
+    }
+
+    // En versiones modernas de Android, retornamos true incluso si el permiso no es necesario
+    return status.isGranted || status.isLimited || status.isDenied;
+  }
+
+  /// Muestra diálogo cuando el permiso de almacenamiento fue denegado permanentemente
+  static Future<void> _showStoragePermissionDeniedDialog(
+      BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.warning_amber,
+                color: Colors.orange,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Permiso Denegado',
+                style: GoogleFonts.inter(
+                  fontSize: 19,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'El permiso de almacenamiento fue denegado. No se podrán guardar PDFs. Por favor, ve a la configuración de la app y habilita el permiso.',
+          style: GoogleFonts.inter(fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(color: Colors.grey.shade600),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context);
+              await openAppSettings();
+            },
+            icon: const Icon(Icons.settings, size: 18),
+            label: const Text('Abrir Configuración'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryGreen,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Muestra diálogo pidiendo activar Bluetooth
   static Future<void> _showBluetoothDialog(BuildContext context) async {
     return showDialog(

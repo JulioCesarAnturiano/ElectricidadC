@@ -79,6 +79,7 @@ class Client {
   final bool registrado;
   final String? ultimaLectura;
   final String? fechaUltimaLectura;
+  final String? numeroMedidor;
 
   Client({
     required this.codCliente,
@@ -90,6 +91,7 @@ class Client {
     required this.registrado,
     this.ultimaLectura,
     this.fechaUltimaLectura,
+    this.numeroMedidor,
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
@@ -103,6 +105,7 @@ class Client {
       registrado: json['registrado'] ?? false,
       ultimaLectura: json['ultima_lectura'],
       fechaUltimaLectura: json['fecha_ultima_lectura'],
+      numeroMedidor: json['numero_medidor'],
     );
   }
 
@@ -117,6 +120,7 @@ class Client {
       'registrado': registrado,
       'ultima_lectura': ultimaLectura,
       'fecha_ultima_lectura': fechaUltimaLectura,
+      'numero_medidor': numeroMedidor,
     };
   }
 }
@@ -229,6 +233,7 @@ class Preaviso {
   final String fechaVencimiento;
   final String periodo;
   final String mensaje;
+  final String? numeroMedidor;
 
   Preaviso({
     required this.codCliente,
@@ -242,6 +247,7 @@ class Preaviso {
     required this.fechaVencimiento,
     required this.periodo,
     required this.mensaje,
+    this.numeroMedidor,
   });
 
   factory Preaviso.fromJson(Map<String, dynamic> json) {
@@ -257,6 +263,7 @@ class Preaviso {
       fechaVencimiento: json['fecha_vencimiento'] ?? '',
       periodo: json['periodo'] ?? '',
       mensaje: json['mensaje'] ?? '',
+      numeroMedidor: json['numero_medidor'],
     );
   }
 
@@ -273,6 +280,7 @@ class Preaviso {
       'fecha_vencimiento': fechaVencimiento,
       'periodo': periodo,
       'mensaje': mensaje,
+      'numero_medidor': numeroMedidor,
     };
   }
 

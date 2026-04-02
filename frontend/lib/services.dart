@@ -145,6 +145,7 @@ class ReadingService {
         fechaVencimiento: 'PENDIENTE',
         periodo: 'Marzo 2026',
         mensaje: 'Tipo de lectura: \${reading.tipoLectura.nombre}',
+        numeroMedidor: client.numeroMedidor ?? client.codCliente,
       );
     }
 

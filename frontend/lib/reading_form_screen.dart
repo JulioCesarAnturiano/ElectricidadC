@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'providers.dart';
 import 'models.dart';
 import 'print_service.dart';
+import 'pdf_service.dart';
 
 class ReadingFormScreen extends StatefulWidget {
   final Client client;
@@ -274,87 +275,40 @@ class _ReadingFormScreenState extends State<ReadingFormScreen> {
     try {
       final printService = PrintService();
 
-      // Verificar si hay impresora conectada
-      if (!printService.isConnected) {
-        // Mostrar mensaje para conectar impresora - NO CIERRA EL DIÁLOGO
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.print_disabled, color: Colors.white),
-                const SizedBox(width: 10),
-                Text(
-                  'No hay impresora conectada. Configure la impresora.',
-                  style: GoogleFonts.inter(),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-        setState(() {
-          _isPrinting = false;
-        });
-        return; // No continuar, debe imprimir
-      }
+      // SOLO generar PDF (sin imprimir por ahora)
+      final pdfPath = await printService.generatePdfPreaviso(_preaviso!);
 
-      final success = await printService.printPreaviso(_preaviso!);
-
-      if (success) {
+      if (pdfPath.isNotEmpty) {
+        // Mostrar mensaje de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 10),
-                Text(
-                  'Preaviso impreso correctamente',
-                  style: GoogleFonts.inter(),
+                Expanded(
+                  child: Text(
+                    'PDF generado exitosamente',
+                    style: GoogleFonts.inter(),
+                  ),
                 ),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 4),
           ),
         );
-        // Solo puede continuar si imprimió exitosamente
+
+        // Cerrar diálogos y volver a la lista
         Navigator.pop(dialogContext); // Cerrar diálogo
         Navigator.pop(context); // Volver a la lista
-      } else {
-        // Error al imprimir - NO CIERRA EL DIÁLOGO
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 10),
-                Text(
-                  'Error al imprimir. Intente de nuevo.',
-                  style: GoogleFonts.inter(),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-        setState(() {
-          _isPrinting = false;
-        });
-        return; // No continuar, debe reintentar
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e', style: GoogleFonts.inter()),
+          content: Text('Error al generar PDF: $e', style: GoogleFonts.inter()),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape:

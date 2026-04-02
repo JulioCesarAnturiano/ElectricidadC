@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'models.dart';
+import 'pdf_service.dart';
 
 /// Servicio para impresión Bluetooth en impresora térmica
 class PrintService {
@@ -130,6 +131,57 @@ class PrintService {
       print('Error imprimiendo: \$e');
       return false;
     }
+  }
+
+  /// Genera un PDF con el preaviso (para cuando no hay rollos)
+  Future<String> generatePdfPreaviso(Preaviso preaviso) async {
+    final pdfService = PdfService();
+    final numeroMedidor = preaviso.numeroMedidor ?? 'N/A';
+    return await pdfService.generatePreaviso(preaviso, numeroMedidor);
+  }
+
+  /// Imprime el preaviso en impresora Bluetooth Y genera un PDF
+  Future<Map<String, dynamic>> printAndGeneratePdf(Preaviso preaviso) async {
+    String? pdfPath;
+    bool printSuccess = false;
+    String message = '';
+
+    // Primero generar el PDF (siempre se genera)
+    try {
+      pdfPath = await generatePdfPreaviso(preaviso);
+      message = 'PDF generado exitosamente';
+    } catch (e) {
+      message = 'Error al generar PDF: $e';
+      return {
+        'success': false,
+        'pdfPath': null,
+        'printSuccess': false,
+        'message': message,
+      };
+    }
+
+    // Luego intentar imprimir si hay impresora conectada
+    if (isConnected) {
+      try {
+        printSuccess = await printPreaviso(preaviso);
+        if (printSuccess) {
+          message = 'PDF generado e impreso correctamente';
+        } else {
+          message = 'PDF generado, pero falló la impresión';
+        }
+      } catch (e) {
+        message = 'PDF generado, error al imprimir: $e';
+      }
+    } else {
+      message = 'PDF generado. No hay impresora conectada';
+    }
+
+    return {
+      'success': true,
+      'pdfPath': pdfPath,
+      'printSuccess': printSuccess,
+      'message': message,
+    };
   }
 
   /// Genera los bytes ESC/POS para el preaviso

@@ -267,6 +267,7 @@ class MockData {
       fechaVencimiento: '2026-04-15',
       periodo: 'Marzo 2026',
       mensaje: 'Pague antes de la fecha de vencimiento para evitar cortes.',
+      numeroMedidor: client.numeroMedidor ?? client.codCliente,
     );
   }
 }

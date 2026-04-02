@@ -43,7 +43,6 @@ dependencies:
   # Bluetooth e impresión térmica
   flutter_blue_plus: ^1.31.0
   esc_pos_utils: ^1.1.0
-  esc_pos_bluetooth: ^0.4.1
   
   # HTTP y estado
   http: ^1.2.0

@@ -22,11 +22,6 @@ class _PrinterScreenState extends State<PrinterScreen> {
   bool _isWebPlatform = false;
   String? _reconnectingPrinterName;
 
-  // Datos de ejemplo para vista previa PDF
-  String? _lastClientName;
-  String? _lastCategory;
-  String? _lastMeterNumber;
-
   // Colores corporativos
   static const Color primaryGreen = Color(0xFF2E7D32);
   static const Color darkerGreen = Color(0xFF1B5E20);
@@ -280,105 +275,7 @@ class _PrinterScreenState extends State<PrinterScreen> {
     );
   }
 
-  /// Widget para la sección de vista previa PDF
-  Widget _buildPdfPreviewSection() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primaryGreen.withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.picture_as_pdf, color: primaryGreen, size: 24),
-              const SizedBox(width: 8),
-              Text(
-                'Vista Previa del Último PDF',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: primaryGreen,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 20),
-          _buildPdfInfoRow(
-            'Nombre de Cliente:',
-            _lastClientName ?? 'Sin datos',
-          ),
-          const SizedBox(height: 8),
-          _buildPdfInfoRow('Categoría:', _lastCategory ?? 'Sin datos'),
-          const SizedBox(height: 8),
-          _buildPdfInfoRow(
-            'Número de Medidor:',
-            _lastMeterNumber ?? 'Sin datos',
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              'Los datos se actualizan al generar un preaviso',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildPdfInfoRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 140,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 13, color: Colors.black87),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Actualiza los datos de vista previa del PDF
-  void updatePdfPreview(
-    String clientName,
-    String category,
-    String meterNumber,
-  ) {
-    setState(() {
-      _lastClientName = clientName;
-      _lastCategory = category;
-      _lastMeterNumber = meterNumber;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -699,9 +596,6 @@ class _PrinterScreenState extends State<PrinterScreen> {
                       },
                     ),
             ),
-
-            // Sección de vista previa PDF
-            _buildPdfPreviewSection(),
 
             // Instrucciones
             Container(

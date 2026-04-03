@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'providers.dart';
 import 'models.dart';
 import 'print_service.dart';
-import 'pdf_service.dart';
 
 class ReadingFormScreen extends StatefulWidget {
   final Client client;
@@ -30,6 +29,18 @@ class _ReadingFormScreenState extends State<ReadingFormScreen> {
   bool _isSubmitting = false;
   Preaviso? _preaviso;
   bool _isPrinting = false;
+  final PrintService _printService = PrintService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initPrinter();
+  }
+
+  Future<void> _initPrinter() async {
+    // Intentar reconectar a impresora guardada
+    await _printService.reconnectToSaved();
+  }
 
   @override
   void dispose() {
@@ -273,52 +284,96 @@ class _ReadingFormScreenState extends State<ReadingFormScreen> {
     });
 
     try {
-      final printService = PrintService();
+      // Verificar si hay impresora conectada
+      if (!_printService.isConnected) {
+        // Intentar reconectar
+        final reconnected = await _printService.reconnectToSaved();
+        if (!reconnected) {
+          // No hay impresora, mostrar mensaje naranja
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '✓ Lectura guardada (sin impresora)',
+                        style: GoogleFonts.inter(),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          Navigator.pop(dialogContext);
+          Navigator.pop(context);
+          return;
+        }
+      }
 
-      // SOLO generar PDF (sin imprimir por ahora)
-      final pdfPath = await printService.generatePdfPreaviso(_preaviso!);
+      // Imprimir directamente en la impresora térmica
+      final success = await _printService.printPreaviso(_preaviso!);
 
-      if (pdfPath.isNotEmpty) {
-        // Mostrar mensaje de éxito
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '✓ Impreso correctamente',
+                      style: GoogleFonts.inter(),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        Navigator.pop(dialogContext);
+        Navigator.pop(context);
+      } else {
+        throw Exception('Error al enviar datos a la impresora');
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'PDF generado exitosamente',
+                    '✗ Error al imprimir',
                     style: GoogleFonts.inter(),
                   ),
                 ),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            duration: const Duration(seconds: 4),
           ),
         );
-
-        // Cerrar diálogos y volver a la lista
-        Navigator.pop(dialogContext); // Cerrar diálogo
-        Navigator.pop(context); // Volver a la lista
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al generar PDF: $e', style: GoogleFonts.inter()),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
       setState(() {
         _isPrinting = false;
       });
-      // No continuar, debe reintentar
     }
   }
 

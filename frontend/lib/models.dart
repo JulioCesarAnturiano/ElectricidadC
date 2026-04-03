@@ -292,26 +292,26 @@ class Preaviso {
 ================================
 PREAVISO DE CONSUMO
 
-Cod. Cliente: \$codCliente
-Nombre: \$nombreCliente
-Direccion: \$direccion
-Categoria: \$categoria
+Cod. Cliente: $codCliente
+Nombre: $nombreCliente
+Direccion: $direccion
+Categoria: $categoria
 
 --------------------------------
 DETALLE DE CONSUMO
 --------------------------------
-Lectura Anterior: \$lecturaAnterior
-Lectura Actual:   \$lecturaActual
-Consumo (kWh):    \$consumo
+Lectura Anterior: $lecturaAnterior
+Lectura Actual:   $lecturaActual
+Consumo (kWh):    $consumo
 
 --------------------------------
-MONTO A PAGAR: S/. \$montoAPagar
+MONTO A PAGAR: S/. $montoAPagar
 --------------------------------
 
-Periodo: \$periodo
-Vence: \$fechaVencimiento
+Periodo: $periodo
+Vence: $fechaVencimiento
 
-\$mensaje
+$mensaje
 
 ================================
     Gracias por su pago

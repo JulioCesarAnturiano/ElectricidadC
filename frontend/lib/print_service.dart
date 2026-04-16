@@ -9,7 +9,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:esc_pos_utils/esc_pos_utils.dart';
-import 'package:intl/intl.dart';
 import 'models.dart';
 
 /// Servicio para impresión Bluetooth en impresora térmica
@@ -457,13 +456,12 @@ class PrintService {
 
   /// Genera los bytes ESC/POS para el preaviso con nuevo formato
   Future<List<int>> _generateEscPosBytes(Preaviso preaviso) async {
-    final fechaActual = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
     final profile = await CapabilityProfile.load();
     final generator = Generator(PaperSize.mm58, profile);
     final bytes = <int>[];
 
     const int lineWidth = 30;
-    const String separator = '--------------------------------';
+    const String separator = '------------------------------';
 
     String normalize(String value, {String fallback = '-'}) {
       final trimmed = value.trim();
@@ -494,35 +492,45 @@ class PrintService {
       return lines.isEmpty ? ['-'] : lines;
     }
 
-    void addField(String label, String value, {bool bold = false}) {
-      final normalized = normalize(value);
-      final wrapped = wrapText(normalized, lineWidth);
-
+    void addSection(String title) {
+      bytes.addAll(generator.feed(1));
       bytes.addAll(
         generator.text(
-          label,
+          title,
           styles: PosStyles(
-            align: PosAlign.left,
+            align: PosAlign.center,
             bold: true,
           ),
         ),
       );
+      bytes.addAll(generator.text(separator));
+    }
 
-      for (final line in wrapped) {
+    void addField(String label, String value, {bool bold = false}) {
+      final normalized = normalize(value);
+      final prefix = '$label: ';
+      final wrapped = wrapText(normalized, lineWidth - prefix.length);
+
+      for (int i = 0; i < wrapped.length; i++) {
+        final line = wrapped[i];
+        final output = i == 0 ? '$prefix$line' : '${' ' * prefix.length}$line';
         bytes.addAll(
           generator.text(
-            ' $line',
+            output,
             styles: PosStyles(
               align: PosAlign.left,
-              bold: bold,
+              bold: i == 0 ? true : bold,
             ),
           ),
         );
       }
+
+      bytes.addAll(generator.feed(1));
     }
 
     bytes.addAll(generator.reset());
     bytes.addAll(await _buildLogoBytes());
+    bytes.addAll(generator.feed(1));
 
     bytes.addAll(
       generator.text(
@@ -538,7 +546,7 @@ class PrintService {
         'LECTURAS ELECTRICAS',
         styles: PosStyles(
           align: PosAlign.center,
-          bold: true,
+          bold: false,
         ),
       ),
     );
@@ -552,56 +560,24 @@ class PrintService {
       ),
     );
 
-    bytes.addAll(generator.hr(ch: '-'));
-    bytes.addAll(generator.text('FECHA IMPRESION: $fechaActual'));
-    bytes.addAll(generator.text(separator));
-
-    bytes.addAll(
-      generator.text(
-        'DATOS DEL CLIENTE',
-        styles: PosStyles(align: PosAlign.left, bold: true),
-      ),
-    );
-    bytes.addAll(generator.text(separator));
+    bytes.addAll(generator.hr(ch: '='));
+    addSection('DATOS DEL CLIENTE');
     addField('NOMBRE:', preaviso.nombreCliente);
     addField('CODIGO CLIENTE:', preaviso.codCliente);
     addField('DIRECCION:', preaviso.direccion);
     addField('CATEGORIA:', preaviso.categoria);
 
-    bytes.addAll(generator.text(separator));
-    bytes.addAll(
-      generator.text(
-        'DATOS DE LECTURA',
-        styles: PosStyles(align: PosAlign.left, bold: true),
-      ),
-    );
-    bytes.addAll(generator.text(separator));
+    addSection('DATOS DE LECTURA');
     addField('LECTURA ACTUAL:', preaviso.lecturaActual);
     addField('CONSUMO:', '${normalize(preaviso.consumo)} kWh');
-    addField('PERIODO:', preaviso.periodo);
 
-    bytes.addAll(generator.text(separator));
-    bytes.addAll(
-      generator.text(
-        'IMPORTE DEL PREAVISO',
-        styles: PosStyles(align: PosAlign.left, bold: true),
-      ),
-    );
-    bytes.addAll(generator.text(separator));
+    addSection('IMPORTE DEL PREAVISO');
     addField(
-      'MONTO A PAGAR:',
+      'MONTO A PAGAR',
       'Bs ${normalize(preaviso.montoAPagar, fallback: '0.00')}',
       bold: true,
     );
-    addField('VENCIMIENTO:', preaviso.fechaVencimiento);
-
-    bytes.addAll(generator.hr(ch: '-'));
-    bytes.addAll(
-      generator.text(
-        'DOCUMENTO DE PREAVISO',
-        styles: PosStyles(align: PosAlign.center, bold: true),
-      ),
-    );
+    bytes.addAll(generator.hr(ch: '='));
     bytes.addAll(generator.feed(4));
     bytes.addAll(generator.cut());
 

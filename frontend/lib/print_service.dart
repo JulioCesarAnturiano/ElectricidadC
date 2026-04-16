@@ -276,6 +276,9 @@ class PrintService {
       await device.connect(timeout: const Duration(seconds: 10));
       _connectedDevice = device;
 
+      // Intentar aumentar MTU para mejorar estabilidad/velocidad en tickets largos
+      await _tryRequestMtu(device);
+
       // Descubrir servicios y buscar característica escribible
       List<BluetoothService> services = await device.discoverServices();
 
@@ -348,6 +351,9 @@ class PrintService {
     try {
       await device.connect(timeout: const Duration(seconds: 15));
       _connectedDevice = device;
+
+      // Intentar aumentar MTU para mejorar estabilidad/velocidad en tickets largos
+      await _tryRequestMtu(device);
 
       // Descubrir servicios
       List<BluetoothService> services = await device.discoverServices();
@@ -429,29 +435,90 @@ class PrintService {
       // Generar bytes ESC/POS para la impresora
       final List<int> bytes = await _generateEscPosBytes(preaviso);
 
-      // Enviar en chunks para evitar overflow del buffer
-      const int chunkSize = 512;
-      for (int i = 0; i < bytes.length; i += chunkSize) {
-        final end = (i + chunkSize < bytes.length)
-            ? i + chunkSize
-            : bytes.length;
-        final chunk = bytes.sublist(i, end);
-
-        await _writeCharacteristic!.write(
-          Uint8List.fromList(chunk),
-          withoutResponse:
-              _writeCharacteristic!.properties.writeWithoutResponse,
-        );
-
-        // Pequeña pausa entre chunks
-        await Future.delayed(const Duration(milliseconds: 50));
-      }
+      await _sendEscPosBytes(bytes);
 
       return true;
     } catch (e) {
-      print('Error imprimiendo: $e');
-      return false;
+      debugPrint('Error imprimiendo formato completo: $e');
+
+      // Fallback ultra compatible (sin logo) para equipos con BLE más limitado
+      try {
+        final fallbackBytes = _generateSimpleEscPosBytes(preaviso);
+        await _sendEscPosBytes(fallbackBytes, forceChunkSize: 20);
+        return true;
+      } catch (fallbackError) {
+        debugPrint('Error imprimiendo fallback: $fallbackError');
+        return false;
+      }
     }
+  }
+
+  Future<void> _tryRequestMtu(BluetoothDevice device) async {
+    try {
+      await device.requestMtu(185);
+    } catch (_) {
+      // iOS/algunas impresoras no soportan requestMtu
+    }
+  }
+
+  Future<void> _sendEscPosBytes(
+    List<int> bytes, {
+    int? forceChunkSize,
+  }) async {
+    if (_writeCharacteristic == null) {
+      throw Exception('Característica de escritura no disponible');
+    }
+
+    final bool withoutResponse =
+        _writeCharacteristic!.properties.writeWithoutResponse;
+
+    // Algunos celulares/impresoras fallan con chunks grandes.
+    // Usamos MTU real cuando esté disponible y tamaño conservador como mínimo.
+    final int mtu = _connectedDevice?.mtuNow ?? 23;
+    final int mtuBasedChunk = (mtu - 3).clamp(20, 180);
+    final int chunkSize = forceChunkSize ?? mtuBasedChunk;
+    final int pauseMs = withoutResponse ? 30 : 10;
+
+    for (int i = 0; i < bytes.length; i += chunkSize) {
+      final end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
+      final chunk = bytes.sublist(i, end);
+
+      await _writeCharacteristic!.write(
+        Uint8List.fromList(chunk),
+        withoutResponse: withoutResponse,
+      );
+
+      await Future.delayed(Duration(milliseconds: pauseMs));
+    }
+  }
+
+  List<int> _generateSimpleEscPosBytes(Preaviso preaviso) {
+    final bytes = <int>[];
+
+    String normalize(String value, {String fallback = '-'}) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? fallback : trimmed;
+    }
+
+    bytes.addAll([0x1B, 0x40]); // Initialize
+    bytes.addAll([0x1B, 0x61, 0x01]); // Center
+    bytes.addAll(_textToBytes('COOPERATIVA 15 DE NOVIEMBRE\n'));
+    bytes.addAll(_textToBytes('PREAVISO DE COBRANZA\n'));
+    bytes.addAll(_textToBytes('------------------------------\n'));
+
+    bytes.addAll([0x1B, 0x61, 0x00]); // Left
+    bytes.addAll(_textToBytes('NOMBRE: ${normalize(preaviso.nombreCliente)}\n'));
+    bytes.addAll(_textToBytes('CODIGO: ${normalize(preaviso.codCliente)}\n'));
+    bytes.addAll(_textToBytes('DIRECCION: ${normalize(preaviso.direccion)}\n'));
+    bytes.addAll(_textToBytes('CATEGORIA: ${normalize(preaviso.categoria)}\n'));
+    bytes.addAll(_textToBytes('LECTURA ACTUAL: ${normalize(preaviso.lecturaActual)}\n'));
+    bytes.addAll(_textToBytes('CONSUMO: ${normalize(preaviso.consumo)} kWh\n'));
+    bytes.addAll(_textToBytes('MONTO A PAGAR: Bs ${normalize(preaviso.montoAPagar, fallback: '0.00')}\n'));
+    bytes.addAll(_textToBytes('------------------------------\n'));
+
+    bytes.addAll([0x1B, 0x64, 0x05]); // Feed
+    bytes.addAll([0x1D, 0x56, 0x00]); // Cut
+    return bytes;
   }
 
   /// Genera los bytes ESC/POS para el preaviso con nuevo formato
@@ -680,19 +747,7 @@ class PrintService {
       // Avanzar papel
       bytes.addAll([0x1B, 0x64, 0x03]);
 
-      // Enviar en chunks de 512 bytes
-      const int chunkSize = 512;
-      for (int i = 0; i < bytes.length; i += chunkSize) {
-        final end = (i + chunkSize < bytes.length) ? i + chunkSize : bytes.length;
-        final chunk = bytes.sublist(i, end);
-
-        await _writeCharacteristic!.write(
-          Uint8List.fromList(chunk),
-          withoutResponse: _writeCharacteristic!.properties.writeWithoutResponse,
-        );
-
-        await Future.delayed(const Duration(milliseconds: 50));
-      }
+      await _sendEscPosBytes(bytes);
 
       return true;
     } catch (e) {

@@ -455,48 +455,96 @@ class PrintService {
   /// Genera los bytes ESC/POS para el preaviso con nuevo formato
   List<int> _generateEscPosBytes(Preaviso preaviso) {
     List<int> bytes = [];
-    
-    // Fecha actual formateada
-    final fechaActual = DateFormat('dd/MM/yyyy').format(DateTime.now());
-    
-    // Valores con defaults para null safety
-    final nombreCliente = preaviso.nombreCliente.isNotEmpty ? preaviso.nombreCliente : 'N/A';
-    final categoria = preaviso.categoria.isNotEmpty ? preaviso.categoria : 'N/A';
-    final numeroMedidor = preaviso.numeroMedidor ?? 'N/A';
+
+    final fechaActual = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+
+    // Ticket termico de 58mm: ~32 caracteres por linea
+    const int lineWidth = 32;
+    const String separator = '================================';
+
+    String normalize(String value, {String fallback = '-'}) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? fallback : trimmed;
+    }
+
+    List<String> wrapText(String text, int width) {
+      final words = text.split(' ');
+      final lines = <String>[];
+      var current = '';
+
+      for (final word in words) {
+        final candidate = current.isEmpty ? word : '$current $word';
+        if (candidate.length <= width) {
+          current = candidate;
+        } else {
+          if (current.isNotEmpty) {
+            lines.add(current);
+          }
+          current = word;
+        }
+      }
+
+      if (current.isNotEmpty) {
+        lines.add(current);
+      }
+
+      return lines.isEmpty ? ['-'] : lines;
+    }
+
+    void addField(String label, String value) {
+      final normalized = normalize(value);
+      final wrapped = wrapText(normalized, lineWidth - 2);
+      bytes.addAll(_textToBytes('$label\n'));
+      for (final line in wrapped) {
+        bytes.addAll(_textToBytes(' $line\n'));
+      }
+    }
 
     // Inicializar impresora
     bytes.addAll([0x1B, 0x40]); // ESC @ - Initialize
 
-    // Configurar alineación centrada
+    // Encabezado
     bytes.addAll([0x1B, 0x61, 0x01]); // ESC a 1 - Center
-
-    // Texto en negrita para encabezado
     bytes.addAll([0x1B, 0x45, 0x01]); // ESC E 1 - Bold on
-    bytes.addAll(_textToBytes('COOPERATIVA DE ELECTRICIDAD\n'));
-    bytes.addAll(_textToBytes('================================\n'));
-    bytes.addAll(_textToBytes('         PREAVISO\n'));
-    bytes.addAll(_textToBytes('================================\n'));
+    bytes.addAll(_textToBytes('COOPERATIVA 15 DE NOVIEMBRE\n'));
+    bytes.addAll(_textToBytes('LECTURAS ELECTRICAS\n'));
+    bytes.addAll(_textToBytes('PREAVISO DE COBRANZA\n'));
     bytes.addAll([0x1B, 0x45, 0x00]); // ESC E 0 - Bold off
-    
-    bytes.addAll(_textToBytes('\n'));
 
-    // Alineación izquierda para datos del cliente
+    bytes.addAll(_textToBytes('$separator\n'));
+    bytes.addAll(_textToBytes('FECHA IMPRESION\n'));
+    bytes.addAll(_textToBytes('$fechaActual\n'));
+    bytes.addAll(_textToBytes('$separator\n'));
+
+    // Alineacion izquierda para detalle
     bytes.addAll([0x1B, 0x61, 0x00]); // ESC a 0 - Left
 
-    bytes.addAll(_textToBytes('Nombre Cliente : $nombreCliente\n'));
-    bytes.addAll(_textToBytes('Categoria      : $categoria\n'));
-    bytes.addAll(_textToBytes('N. Medidor     : $numeroMedidor\n'));
-    
-    bytes.addAll(_textToBytes('\n'));
+    bytes.addAll(_textToBytes('DATOS DEL CLIENTE\n'));
     bytes.addAll(_textToBytes('--------------------------------\n'));
-    bytes.addAll(_textToBytes('Fecha          : $fechaActual\n'));
-    bytes.addAll(_textToBytes('--------------------------------\n'));
+    addField('NOMBRE:', preaviso.nombreCliente);
+    addField('CODIGO CLIENTE:', preaviso.codCliente);
+    addField('DIRECCION:', preaviso.direccion);
+    addField('CATEGORIA:', preaviso.categoria);
 
-    // Centrar pie de ticket
+    bytes.addAll(_textToBytes('--------------------------------\n'));
+    bytes.addAll(_textToBytes('DATOS DE LECTURA\n'));
+    bytes.addAll(_textToBytes('--------------------------------\n'));
+    addField('LECTURA ACTUAL:', preaviso.lecturaActual);
+    addField('CONSUMO:', '${normalize(preaviso.consumo)} kWh');
+    addField('PERIODO:', preaviso.periodo);
+
+    bytes.addAll(_textToBytes('--------------------------------\n'));
+    bytes.addAll(_textToBytes('IMPORTE DEL PREAVISO\n'));
+    bytes.addAll(_textToBytes('--------------------------------\n'));
+    bytes.addAll([0x1B, 0x45, 0x01]); // Bold on
+    addField('MONTO A PAGAR:', 'Bs ${normalize(preaviso.montoAPagar, fallback: '0.00')}');
+    bytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+    addField('VENCIMIENTO:', preaviso.fechaVencimiento);
+
+    bytes.addAll(_textToBytes('$separator\n'));
     bytes.addAll([0x1B, 0x61, 0x01]); // Center
-    bytes.addAll(_textToBytes('\n'));
-    bytes.addAll(_textToBytes('Gracias por su pago\n'));
-    bytes.addAll(_textToBytes('================================\n'));
+    bytes.addAll(_textToBytes('DOCUMENTO DE PREAVISO\n'));
+    bytes.addAll(_textToBytes('$separator\n'));
 
     // Avanzar papel y cortar (si la impresora soporta corte)
     bytes.addAll([0x1B, 0x64, 0x05]); // ESC d 5 - Feed 5 lines

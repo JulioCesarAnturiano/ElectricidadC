@@ -69,10 +69,10 @@ class PdfService {
                 pw.Divider(thickness: 2),
                 pw.SizedBox(height: 10),
                 
-                _buildInfoRow('Preaviso:', preaviso.codCliente),
+                _buildInfoRow('Codigo de cliente:', preaviso.codCliente),
                 _buildInfoRow('Nombre de cliente:', preaviso.nombreCliente),
+                _buildInfoRow('Direccion:', preaviso.direccion),
                 _buildInfoRow('Categoría:', preaviso.categoria),
-                _buildInfoRow('Número de medidor:', numeroMedidor),
                 
                 pw.SizedBox(height: 20),
                 
@@ -87,7 +87,6 @@ class PdfService {
                 pw.Divider(thickness: 2),
                 pw.SizedBox(height: 10),
                 
-                _buildInfoRow('Lectura Anterior:', preaviso.lecturaAnterior + ' kWh'),
                 _buildInfoRow('Lectura Actual:', preaviso.lecturaActual + ' kWh'),
                 _buildInfoRow('Consumo:', preaviso.consumo + ' kWh'),
                 
@@ -128,21 +127,7 @@ class PdfService {
                 _buildInfoRow('Fecha de Vencimiento:', preaviso.fechaVencimiento),
                 
                 pw.SizedBox(height: 20),
-                
-                // Mensaje
-                if (preaviso.mensaje.isNotEmpty)
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(10),
-                    decoration: pw.BoxDecoration(
-                      border: pw.Border.all(color: PdfColors.grey),
-                    ),
-                    child: pw.Text(
-                      preaviso.mensaje,
-                      style: const pw.TextStyle(fontSize: 11),
-                      textAlign: pw.TextAlign.justify,
-                    ),
-                  ),
-                
+
                 pw.Spacer(),
                 
                 // Pie de página
@@ -151,7 +136,7 @@ class PdfService {
                     children: [
                       pw.Divider(),
                       pw.Text(
-                        'Gracias por su pago puntual',
+                        'DOCUMENTO DE PREAVISO',
                         style: const pw.TextStyle(fontSize: 12),
                       ),
                       pw.SizedBox(height: 5),

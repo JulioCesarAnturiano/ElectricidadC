@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:intl/intl.dart';
 import 'models.dart';
 
@@ -425,7 +428,7 @@ class PrintService {
 
     try {
       // Generar bytes ESC/POS para la impresora
-      final List<int> bytes = _generateEscPosBytes(preaviso);
+      final List<int> bytes = await _generateEscPosBytes(preaviso);
 
       // Enviar en chunks para evitar overflow del buffer
       const int chunkSize = 512;
@@ -453,14 +456,14 @@ class PrintService {
   }
 
   /// Genera los bytes ESC/POS para el preaviso con nuevo formato
-  List<int> _generateEscPosBytes(Preaviso preaviso) {
-    List<int> bytes = [];
-
+  Future<List<int>> _generateEscPosBytes(Preaviso preaviso) async {
     final fechaActual = DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now());
+    final profile = await CapabilityProfile.load();
+    final generator = Generator(PaperSize.mm58, profile);
+    final bytes = <int>[];
 
-    // Ticket termico de 58mm: ~32 caracteres por linea
-    const int lineWidth = 32;
-    const String separator = '================================';
+    const int lineWidth = 30;
+    const String separator = '--------------------------------';
 
     String normalize(String value, {String fallback = '-'}) {
       final trimmed = value.trim();
@@ -476,12 +479,12 @@ class PrintService {
         final candidate = current.isEmpty ? word : '$current $word';
         if (candidate.length <= width) {
           current = candidate;
-        } else {
-          if (current.isNotEmpty) {
-            lines.add(current);
-          }
-          current = word;
+          continue;
         }
+        if (current.isNotEmpty) {
+          lines.add(current);
+        }
+        current = word;
       }
 
       if (current.isNotEmpty) {
@@ -491,66 +494,185 @@ class PrintService {
       return lines.isEmpty ? ['-'] : lines;
     }
 
-    void addField(String label, String value) {
+    void addField(String label, String value, {bool bold = false}) {
       final normalized = normalize(value);
-      final wrapped = wrapText(normalized, lineWidth - 2);
-      bytes.addAll(_textToBytes('$label\n'));
+      final wrapped = wrapText(normalized, lineWidth);
+
+      bytes.addAll(
+        generator.text(
+          label,
+          styles: PosStyles(
+            align: PosAlign.left,
+            bold: true,
+          ),
+        ),
+      );
+
       for (final line in wrapped) {
-        bytes.addAll(_textToBytes(' $line\n'));
+        bytes.addAll(
+          generator.text(
+            ' $line',
+            styles: PosStyles(
+              align: PosAlign.left,
+              bold: bold,
+            ),
+          ),
+        );
       }
     }
 
-    // Inicializar impresora
-    bytes.addAll([0x1B, 0x40]); // ESC @ - Initialize
+    bytes.addAll(generator.reset());
+    bytes.addAll(await _buildLogoBytes());
 
-    // Encabezado
-    bytes.addAll([0x1B, 0x61, 0x01]); // ESC a 1 - Center
-    bytes.addAll([0x1B, 0x45, 0x01]); // ESC E 1 - Bold on
-    bytes.addAll(_textToBytes('COOPERATIVA 15 DE NOVIEMBRE\n'));
-    bytes.addAll(_textToBytes('LECTURAS ELECTRICAS\n'));
-    bytes.addAll(_textToBytes('PREAVISO DE COBRANZA\n'));
-    bytes.addAll([0x1B, 0x45, 0x00]); // ESC E 0 - Bold off
+    bytes.addAll(
+      generator.text(
+        'COOPERATIVA 15 DE NOVIEMBRE',
+        styles: PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      ),
+    );
+    bytes.addAll(
+      generator.text(
+        'LECTURAS ELECTRICAS',
+        styles: PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      ),
+    );
+    bytes.addAll(
+      generator.text(
+        'PREAVISO DE COBRANZA',
+        styles: PosStyles(
+          align: PosAlign.center,
+          bold: true,
+        ),
+      ),
+    );
 
-    bytes.addAll(_textToBytes('$separator\n'));
-    bytes.addAll(_textToBytes('FECHA IMPRESION\n'));
-    bytes.addAll(_textToBytes('$fechaActual\n'));
-    bytes.addAll(_textToBytes('$separator\n'));
+    bytes.addAll(generator.hr(ch: '-'));
+    bytes.addAll(generator.text('FECHA IMPRESION: $fechaActual'));
+    bytes.addAll(generator.text(separator));
 
-    // Alineacion izquierda para detalle
-    bytes.addAll([0x1B, 0x61, 0x00]); // ESC a 0 - Left
-
-    bytes.addAll(_textToBytes('DATOS DEL CLIENTE\n'));
-    bytes.addAll(_textToBytes('--------------------------------\n'));
+    bytes.addAll(
+      generator.text(
+        'DATOS DEL CLIENTE',
+        styles: PosStyles(align: PosAlign.left, bold: true),
+      ),
+    );
+    bytes.addAll(generator.text(separator));
     addField('NOMBRE:', preaviso.nombreCliente);
     addField('CODIGO CLIENTE:', preaviso.codCliente);
     addField('DIRECCION:', preaviso.direccion);
     addField('CATEGORIA:', preaviso.categoria);
 
-    bytes.addAll(_textToBytes('--------------------------------\n'));
-    bytes.addAll(_textToBytes('DATOS DE LECTURA\n'));
-    bytes.addAll(_textToBytes('--------------------------------\n'));
+    bytes.addAll(generator.text(separator));
+    bytes.addAll(
+      generator.text(
+        'DATOS DE LECTURA',
+        styles: PosStyles(align: PosAlign.left, bold: true),
+      ),
+    );
+    bytes.addAll(generator.text(separator));
     addField('LECTURA ACTUAL:', preaviso.lecturaActual);
     addField('CONSUMO:', '${normalize(preaviso.consumo)} kWh');
     addField('PERIODO:', preaviso.periodo);
 
-    bytes.addAll(_textToBytes('--------------------------------\n'));
-    bytes.addAll(_textToBytes('IMPORTE DEL PREAVISO\n'));
-    bytes.addAll(_textToBytes('--------------------------------\n'));
-    bytes.addAll([0x1B, 0x45, 0x01]); // Bold on
-    addField('MONTO A PAGAR:', 'Bs ${normalize(preaviso.montoAPagar, fallback: '0.00')}');
-    bytes.addAll([0x1B, 0x45, 0x00]); // Bold off
+    bytes.addAll(generator.text(separator));
+    bytes.addAll(
+      generator.text(
+        'IMPORTE DEL PREAVISO',
+        styles: PosStyles(align: PosAlign.left, bold: true),
+      ),
+    );
+    bytes.addAll(generator.text(separator));
+    addField(
+      'MONTO A PAGAR:',
+      'Bs ${normalize(preaviso.montoAPagar, fallback: '0.00')}',
+      bold: true,
+    );
     addField('VENCIMIENTO:', preaviso.fechaVencimiento);
 
-    bytes.addAll(_textToBytes('$separator\n'));
-    bytes.addAll([0x1B, 0x61, 0x01]); // Center
-    bytes.addAll(_textToBytes('DOCUMENTO DE PREAVISO\n'));
-    bytes.addAll(_textToBytes('$separator\n'));
-
-    // Avanzar papel y cortar (si la impresora soporta corte)
-    bytes.addAll([0x1B, 0x64, 0x05]); // ESC d 5 - Feed 5 lines
-    bytes.addAll([0x1D, 0x56, 0x00]); // GS V 0 - Full cut (si soporta)
+    bytes.addAll(generator.hr(ch: '-'));
+    bytes.addAll(
+      generator.text(
+        'DOCUMENTO DE PREAVISO',
+        styles: PosStyles(align: PosAlign.center, bold: true),
+      ),
+    );
+    bytes.addAll(generator.feed(4));
+    bytes.addAll(generator.cut());
 
     return bytes;
+  }
+
+  Future<List<int>> _buildLogoBytes() async {
+    try {
+      final data = await rootBundle.load('assets/images/logo.png');
+      final codec = await ui.instantiateImageCodec(
+        data.buffer.asUint8List(),
+        targetWidth: 110,
+      );
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final byteData = await image.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
+
+      if (byteData == null) {
+        return [];
+      }
+
+      final width = image.width;
+      final height = image.height;
+      final rgba = byteData.buffer.asUint8List();
+      final widthBytes = (width + 7) ~/ 8;
+      final raster = Uint8List(widthBytes * height);
+
+      for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+          final idx = (y * width + x) * 4;
+          final r = rgba[idx];
+          final g = rgba[idx + 1];
+          final b = rgba[idx + 2];
+          final a = rgba[idx + 3];
+
+          final luma = (0.299 * r + 0.587 * g + 0.114 * b);
+          final isBlack = a > 30 && luma < 180;
+
+          if (isBlack) {
+            final byteIndex = y * widthBytes + (x >> 3);
+            raster[byteIndex] |= (0x80 >> (x & 7));
+          }
+        }
+      }
+
+      final xL = widthBytes & 0xFF;
+      final xH = (widthBytes >> 8) & 0xFF;
+      final yL = height & 0xFF;
+      final yH = (height >> 8) & 0xFF;
+
+      return [
+        0x1B,
+        0x61,
+        0x00,
+        0x1D,
+        0x76,
+        0x30,
+        0x00,
+        xL,
+        xH,
+        yL,
+        yH,
+        ...raster,
+        0x0A,
+      ];
+    } catch (e) {
+      debugPrint('No se pudo cargar logo para impresion: $e');
+      return [];
+    }
   }
 
   /// Convierte texto a bytes latin1 (compatible con impresoras)
